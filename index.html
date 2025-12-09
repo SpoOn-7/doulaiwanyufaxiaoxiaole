@@ -619,105 +619,7 @@ h1 { color: #4682b4; }
             return array;
         }
 
-        // 創建方塊元素 (保持不變)
-        function createTile(text, type) {
-            const tile = document.createElement('div');
-            
-            tile.className = `tile ${type}`;
-            tile.textContent = text;
-            tile.draggable = true;
-            tile.dataset.text = text;
-            tile.dataset.id = Date.now() + Math.random(); 
-            
-            setupDragEvents(tile);
-            boardElement.appendChild(tile);
-            currentTiles.push(tile);
-            // --- 2. 拖曳與復原邏輯 (新增手機觸摸處理) ---
-let draggedTile = null;
-let currentSlot = null; // 用於跟蹤當前手指所在的槽位
 
-function setupDragEvents(tile) {
-    
-    // --- 桌面版（Drag Events） ---
-    tile.ondragstart = (e) => {
-        draggedTile = tile;
-        e.dataTransfer.setData('text/plain', tile.dataset.id); 
-        setTimeout(() => tile.classList.add('dragging'), 0);
-    };
-
-    tile.ondragend = () => {
-        tile.classList.remove('dragging');
-        draggedTile = null;
-    };
-
-    // --- 手機版（Touch Events） ---
-
-    // 1. 觸摸開始 (touchstart): 準備拖曳並阻止頁面滾動
-    tile.ontouchstart = (e) => {
-        e.preventDefault(); 
-        
-        draggedTile = tile;
-        tile.classList.add('dragging');
-
-        // 模擬拖曳，將方塊隱藏
-        setTimeout(() => tile.classList.add('hidden'), 50); 
-    };
-
-    // 2. 觸摸移動 (touchmove): 追蹤手指位置並高亮目標槽位
-    tile.ontouchmove = (e) => {
-        if (!draggedTile) return;
-        
-        e.preventDefault(); // 再次阻止頁面滾動，防止網頁拖曳
-
-        const touch = e.touches[0];
-        const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
-        
-        const slots = document.querySelectorAll('.slot');
-        let newSlot = null;
-
-        slots.forEach(slot => {
-            const slotIndex = parseInt(slot.id.split('-')[1]);
-            // 檢查目標元素是否在 slot 區域內，並且該槽位是空的
-            if (slot.contains(targetElement) && slotContents[slotIndex] === null) {
-                newSlot = slot;
-            }
-        });
-        
-        // 處理高亮效果 
-        if (newSlot !== currentSlot) {
-            if (currentSlot) {
-                currentSlot.style.backgroundColor = ''; 
-            }
-            if (newSlot) {
-                newSlot.style.backgroundColor = '#e0f7fa'; 
-            }
-            currentSlot = newSlot;
-        }
-    };
-
-    // 3. 觸摸結束 (touchend): 放置方塊
-    tile.ontouchend = (e) => {
-        if (!draggedTile) return;
-        
-        draggedTile.classList.remove('dragging');
-        draggedTile.classList.remove('hidden'); 
-
-        // 如果當前有高亮槽位，執行手動放置邏輯
-        if (currentSlot) {
-            const slotIndex = parseInt(currentSlot.id.split('-')[1]);
-            
-            if (slotContents[slotIndex] === null) {
-                handleDropManual(draggedTile, slotIndex);
-            }
-        }
-        
-        // 清除所有高亮並重置狀態
-        document.querySelectorAll('.slot').forEach(slot => slot.style.backgroundColor = '');
-        draggedTile = null;
-        currentSlot = null;
-    };
-}
-        }
 
         // 初始化下方拖曳欄位 (保持不變)
         function initializeSlots() {
@@ -749,22 +651,6 @@ function handleDropManual(originalTile, slotIndex) {
     slot.appendChild(slotTile);
 }
         
-        // --- 2. 拖曳與復原邏輯 (保持不變) ---
-        let draggedTile = null;
-
-        function setupDragEvents(tile) {
-            tile.ondragstart = (e) => {
-                draggedTile = tile;
-                e.dataTransfer.setData('text/plain', tile.dataset.id); 
-                setTimeout(() => tile.classList.add('dragging'), 0);
-            };
-
-            tile.ondragend = () => {
-                tile.classList.remove('dragging');
-                draggedTile = null;
-            };
-        }
-
         function handleDrop(e, slotIndex) {
             e.preventDefault();
             if (!draggedTile || slotContents[slotIndex] !== null) return;
@@ -957,7 +843,43 @@ function handleDropManual(originalTile, slotIndex) {
             messageBox.textContent = text;
             messageBox.className = type;
         }
+<script>
+        // --- 遊戲數據與設定 ---
+        const GRID_SIZE = 16; 
+        const SENTENCE_LENGTH = 6; 
+        // ... (其他 const 變數) ...
 
+        let currentTiles = []; 
+        let slotContents = Array(SENTENCE_LENGTH).fill(null); 
+        let eliminatedSentences = new Set();
+        
+        // ----------------------------------------------------
+        // ⭐ 請將您提供的程式碼貼在這裡 (這是函數外部) ⭐
+        // ----------------------------------------------------
+        // --- 2. 拖曳與復原邏輯 (整合桌面與手機) ---
+        let draggedTile = null; // 注意：這裡應該使用 'let'
+        let currentSlot = null; // 注意：這裡應該使用 'let'
+       
+        // 請用這個函數替換您所有重複的 setupDragEvents 函數定義
+        function setupDragEvents(tile) {
+            // --- 桌面版（Drag Events）: 這是電腦拖曳的關鍵 ---
+            tile.ondragstart = (e) => {
+                // ... (這裡是你提供的所有 ondrag/ontouch 邏輯) ...
+                currentSlot = null;
+            };
+        }
+        // ----------------------------------------------------
+
+        // --- 關鍵詞彙生成邏輯 (保持不變) ---
+        function getRandomSubjectGroup(existingVocabSet) { 
+            // ...
+        }
+        
+        // --- 1. 遊戲初始化 --- 
+        function initializeGame() {
+            // ...
+        }
+        // ... (接下來是 createTile, initializeSlots, handleDropManual 等函數) ...
         // --- 啟動遊戲 ---
         initializeGame();
     </script>
