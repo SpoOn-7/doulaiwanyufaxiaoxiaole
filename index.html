@@ -410,6 +410,30 @@ h1 { color: #4682b4; }
         padding: 8px;
     }
 }
+        /* ------------------------------------- */
+/* 🎨 重新定義核心方塊顏色 (確保在基礎 .tile 之後) */
+/* ------------------------------------- */
+.dou { 
+    background-color: #ffd700 !important; 
+    border: 3px solid #ff8c00 !important;
+} 
+.subject, .complement { 
+    background-color: #b0e0e6 !important; 
+} 
+.verb { 
+    background-color: #f08080 !important; 
+} 
+.connector { 
+    background-color: #98fb98 !important; 
+} 
+
+/* 確保手機版也帶有顏色 */
+@media (max-width: 500px) {
+    .dou { background-color: #ffd700 !important; border: 3px solid #ff8c00 !important; }
+    .subject, .complement { background-color: #b0e0e6 !important; }
+    .verb { background-color: #f08080 !important; }
+    .connector { background-color: #98fb98 !important; }
+}
     </style>
 </head>
 <body>
