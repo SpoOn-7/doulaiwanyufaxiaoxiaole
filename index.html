@@ -503,16 +503,17 @@ h1 { color: #4682b4; }
 // 結合所有詞彙和它們的顏色類型
         const allVocab = [];
         for (const cat in vocabCategories) {
-            // 🚀 更新：將 COMPLEMENT_MUSIC 視為 'complement' 顏色
-            const colorType = (cat === 'P' || cat === 'D' || cat === 'S' || cat === 'COMPLEMENT_MUSIC') ? 'subject' :  // 這裡將所有名詞都視為 subject 顏色
+            // 簡化顏色分類邏輯：所有主詞/名詞類都統一歸類
+            const colorType = (cat === 'P' || cat === 'D' || cat === 'S') ? 'subject' : 
                               (cat.startsWith('VERB') || cat === 'ADJ_VERB') ? 'verb' : 
                               (cat === 'CONNECTOR') ? 'connector' : 
-                              (cat === 'DOU') ? 'dou' : 'complement';
+                              (cat === 'DOU') ? 'dou' : 'complement'; // 確保 COMPLEMENT_MUSIC 也能被歸到 complement
             
             vocabCategories[cat].forEach(word => {
                 allVocab.push({ text: word, type: colorType });
             });
         }
+        
         // --- 句型模板規則 ---
         const sentenceTemplates = [
             // ------------------------------------
@@ -872,41 +873,456 @@ function handleDropManual(originalTile, slotIndex) {
         // --- 遊戲數據與設定 ---
         const GRID_SIZE = 16; 
         const SENTENCE_LENGTH = 6; 
-        // ... (其他 const 變數) ...
+        const boardElement = document.getElementById('game-board');
+        const messageBox = document.getElementById('message-box');
+        const checkButton = document.getElementById('check-button');
 
+        // P: 人物, D: 飲料, S: 運動項目
+        const vocabCategories = {
+            'P': ['我', '你', '他', '爸爸', '媽媽', '姊姊', '妹妹', '哥哥'],
+            'D': ['咖啡', '烏龍茶'],
+            // S 專注於體育活動 (用於 P...打 S)
+            'S': ['棒球', '網球', '籃球', '游泳'], 
+            // 其他功能性詞彙
+            'CONNECTOR': ['和'],
+            'DOU': ['都'],
+            'VERB_GENERIC': ['喜歡', '學', '聽', '看'], 
+            'VERB_ACTION': ['打'], 
+            'ADJ_VERB': ['好'],
+            'COMPLEMENT_MUSIC': ['音樂'], // 🚀 限制：「聽」只能和它配對
+            'COMPLEMENT': ['電影', '運動', '漂亮', '好玩', '玩', '喝', '茶', '看', '聽'] 
+        };
+        
+        // 輔助函數：根據詞彙獲取其語法類別
+        function getVocabCategory(word) {
+            for (const category in vocabCategories) {
+                if (vocabCategories[category].includes(word)) {
+                    return category;
+                }
+            }
+            return 'OTHER';
+        }
+        
+        // 獲取所有 P/D/S 類別的詞彙
+        const subjectVocab = [...vocabCategories.P, ...vocabCategories.D, ...vocabCategories.S];
+
+// 結合所有詞彙和它們的顏色類型
+        const allVocab = [];
+        for (const cat in vocabCategories) {
+            // 修正：讓 COMPLEMENT 和 COMPLEMENT_MUSIC 都歸類為 'complement' 顏色
+            const colorType = (cat === 'P' || cat === 'D' || cat === 'S') ? 'subject' : 
+                              (cat.startsWith('VERB') || cat === 'ADJ_VERB') ? 'verb' : 
+                              (cat === 'CONNECTOR') ? 'connector' : 
+                              (cat === 'DOU') ? 'dou' : 'complement';
+            
+            vocabCategories[cat].forEach(word => {
+                allVocab.push({ text: word, type: colorType });
+            });
+        }
+        
+        // --- 句型模板規則 (已包含所有限制) ---
+        const sentenceTemplates = [
+            // ------------------------------------
+            // 1. 人物 (P) 的動作
+            // ------------------------------------
+            
+            // P 和 P 都 喜歡 D_CAT (S, D, COMPLEMENT, COMPLEMENT_MUSIC)
+            { A_TYPE: 'P', B_TYPE: 'P', C: '喜歡', D_CAT: ['S', 'D', 'COMPLEMENT', 'COMPLEMENT_MUSIC'] }, 
+            // P 和 P 都 學 D_CAT (S, COMPLEMENT)
+            { A_TYPE: 'P', B_TYPE: 'P', C: '學', D_CAT: ['S', 'COMPLEMENT'] }, 
+            
+            // 🚀 限制：「打」只能和棒球/網球/籃球配對 (S類別)
+            { A_TYPE: 'P', B_TYPE: 'P', C: '打', D_CAT: ['S'] }, 
+            
+            // 🚀 限制：「聽」只能和音樂配對 (COMPLEMENT_MUSIC)
+            { A_TYPE: 'P', B_TYPE: 'P', C: '聽', D_CAT: ['COMPLEMENT_MUSIC'] }, 
+            
+            // 🚀 限制：「看」只能和電影配對 (D_WORD = '電影')
+            { A_TYPE: 'P', B_TYPE: 'P', C: '看', D_WORD: ['電影'] }, 
+            
+            // P 和 P 都 好 漂亮
+            { A_TYPE: 'P', B_TYPE: 'P', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['漂亮'] }, 
+            
+            // P 和 P 都 覺得 D (怎麼樣/漂亮)
+            { A_TYPE: 'P', B_TYPE: 'P', C: '覺得', D_CAT: ['COMPLEMENT'] },
+
+            // ------------------------------------
+            // 2. 飲料 (D) - 「好」搭配
+            // ------------------------------------
+            { 
+                A_TYPE: 'D', B_TYPE: 'D', C: '好', 
+                // 🚀 限制：「好」只能和「喝」配對
+                D_CAT: ['COMPLEMENT'], 
+                D_WORD: ['喝'] 
+            },
+
+            // ------------------------------------
+            // 3. 運動 (S) - 「好」搭配
+            // ------------------------------------
+            { 
+                A_TYPE: 'S', B_TYPE: 'S', C: '好', 
+                // 🚀 限制：「好」只能和「玩」配對
+                D_CAT: ['COMPLEMENT'], 
+                D_WORD: ['玩'] 
+            },
+
+            // ------------------------------------
+            // 4. 其他事物 (COMPLEMENT/COMPLEMENT_MUSIC) - 「好」搭配
+            // ------------------------------------
+            { 
+                A_TYPE: 'COMPLEMENT', B_TYPE: 'COMPLEMENT', C: '好', 
+                // 限制：'電影'/'運動' 搭配 '好看'，其他名詞搭配 '好玩'。
+                D_CAT: ['COMPLEMENT'], 
+                D_WORD: ['看', '玩'] 
+            },
+            { 
+                A_TYPE: 'COMPLEMENT_MUSIC', B_TYPE: 'COMPLEMENT_MUSIC', C: '好', 
+                D_CAT: ['COMPLEMENT'], 
+                D_WORD: ['聽'] // 🚀 限制：音樂只能搭配「好聽」
+            },
+        ];
+        
+        const validSubjectCategories = ['P', 'D', 'S', 'COMPLEMENT', 'COMPLEMENT_MUSIC']; // 確保所有名詞類別都包含
+        
         let currentTiles = []; 
         let slotContents = Array(SENTENCE_LENGTH).fill(null); 
         let eliminatedSentences = new Set();
-        
-        // ----------------------------------------------------
-        // ⭐ 請將您提供的程式碼貼在這裡 (這是函數外部) ⭐
-        // ----------------------------------------------------
+        
         // --- 2. 拖曳與復原邏輯 (整合桌面與手機) ---
-        let draggedTile = null; // 注意：這裡應該使用 'let'
-        let currentSlot = null; // 注意：這裡應該使用 'let'
-       
-        // 請用這個函數替換您所有重複的 setupDragEvents 函數定義
-        function setupDragEvents(tile) {
-            // --- 桌面版（Drag Events）: 這是電腦拖曳的關鍵 ---
-            tile.ondragstart = (e) => {
-                // ... (這裡是你提供的所有 ondrag/ontouch 邏輯) ...
-                currentSlot = null;
-            };
-        }
-        // ----------------------------------------------------
+        let draggedTile = null; 
+        let currentSlot = null; 
 
         // --- 關鍵詞彙生成邏輯 (保持不變) ---
-        function getRandomSubjectGroup(existingVocabSet) { 
-            // ...
+
+        function getRandomSubjectGroup(existingVocabSet) {
+            const groups = ['P', 'D', 'S'];
+            const mainType = groups[Math.floor(Math.random() * groups.length)]; 
+            
+            let requiredWords = new Set();
+            let mainVocabList = vocabCategories[mainType];
+            
+            let uniqueSubjects = shuffleArray([...mainVocabList]);
+            if (uniqueSubjects.length >= 2) {
+                requiredWords.add(uniqueSubjects[0]);
+                requiredWords.add(uniqueSubjects[1]);
+            } else if (uniqueSubjects.length === 1) {
+                requiredWords.add(uniqueSubjects[0]);
+                requiredWords.add(uniqueSubjects[0]);
+            }
+
+            const possibleTemplates = sentenceTemplates.filter(t => t.A_TYPE === mainType);
+            if (possibleTemplates.length > 0) {
+                const template = possibleTemplates[Math.floor(Math.random() * possibleTemplates.length)];
+                requiredWords.add(template.C);
+                
+                // 修正：將所有 COMPLEMENT 類型的詞彙合併
+                const allComplement = [
+                    ...vocabCategories.COMPLEMENT, 
+                    ...vocabCategories.S, 
+                    ...vocabCategories.D, 
+                    ...vocabCategories.COMPLEMENT_MUSIC
+                ].filter(w => !requiredWords.has(w));
+                
+                let dWord;
+                
+                if (template.D_WORD) {
+                    dWord = template.D_WORD[Math.floor(Math.random() * template.D_WORD.length)];
+                } else {
+                    const potentialD = allComplement.filter(w => template.D_CAT.includes(getVocabCategory(w)));
+                    dWord = potentialD.length > 0 ? potentialD[Math.floor(Math.random() * potentialD.length)] : vocabCategories.COMPLEMENT[0];
+                }
+                
+                requiredWords.add(dWord);
+            }
+
+            return Array.from(requiredWords).filter(w => !existingVocabSet.has(w));
         }
-        
+
         // --- 1. 遊戲初始化 --- 
+
         function initializeGame() {
-            // ...
+            boardElement.innerHTML = '';
+            messageBox.textContent = '';
+            messageBox.className = '';
+            checkButton.disabled = false;
+            eliminatedSentences.clear(); 
+            
+            refillBoard(true); 
+            initializeSlots();
+            checkButton.onclick = checkSentence;
         }
-        // ... (接下來是 createTile, initializeSlots, handleDropManual 等函數) ...
-        // --- 啟動遊戲 ---
-        initializeGame();
-    </script>
+
+        // 幫手函數：打亂陣列 (保持不變)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // 初始化下方拖曳欄位 (保持不變)
+        function initializeSlots() {
+            slotContents.fill(null);
+            for(let i = 0; i < SENTENCE_LENGTH; i++) {
+                const slot = document.getElementById(`slot-${i}`);
+                slot.innerHTML = '';
+                slot.ondragover = (e) => e.preventDefault();
+                slot.ondrop = (e) => handleDrop(e, i);
+            }
+        }
+
+        // **重要：手動放置函數，供手機觸摸使用**
+        function handleDropManual(originalTile, slotIndex) {
+            const text = originalTile.dataset.text;
+
+            slotContents[slotIndex] = { text, originalTile };
+
+            const slotTile = document.createElement('div');
+            const vocabItem = allVocab.find(v => v.text === text);
+            slotTile.className = `slot-tile ${vocabItem.type}`;
+            slotTile.textContent = text;
+            
+            slotTile.onclick = () => removeTileFromSlot(slotIndex);
+
+            originalTile.classList.add('hidden');
+            
+            const slot = document.getElementById(`slot-${slotIndex}`);
+            slot.innerHTML = '';
+            slot.appendChild(slotTile);
+        }
+        
+        function handleDrop(e, slotIndex) {
+            e.preventDefault();
+            if (!draggedTile || slotContents[slotIndex] !== null) return;
+
+            const text = draggedTile.dataset.text;
+            const originalTile = draggedTile;
+
+            slotContents[slotIndex] = { text, originalTile };
+
+            const slotTile = document.createElement('div');
+            const vocabItem = allVocab.find(v => v.text === text);
+            slotTile.className = `slot-tile ${vocabItem.type}`;
+            slotTile.textContent = text;
+            
+            slotTile.onclick = () => removeTileFromSlot(slotIndex);
+
+            originalTile.classList.add('hidden');
+            
+            const slot = document.getElementById(`slot-${slotIndex}`);
+            slot.innerHTML = '';
+            slot.appendChild(slotTile);
+            draggedTile = null; // 重置拖曳狀態
+        }
+        
+        function removeTileFromSlot(slotIndex) {
+            if (slotContents[slotIndex] === null) return;
+
+            const { originalTile } = slotContents[slotIndex];
+
+            originalTile.classList.remove('hidden');
+
+            document.getElementById(`slot-${index}`).innerHTML = '';
+            slotContents[slotIndex] = null;
+        }
+
+        // 動態創建方塊 (已包含拖曳事件)
+        function createTile(text, type) {
+            const tile = document.createElement('div');
+            tile.className = `tile ${type}`;
+            tile.textContent = text;
+            tile.setAttribute('draggable', true);
+            tile.dataset.text = text;
+            
+            // 桌面版（Drag Events）:
+            tile.ondragstart = (e) => {
+                draggedTile = tile;
+                e.dataTransfer.setData('text/plain', text);
+                setTimeout(() => tile.classList.add('dragging'), 0);
+            };
+            tile.ondragend = () => {
+                tile.classList.remove('dragging');
+                draggedTile = null;
+            };
+
+            // 手機版（Touch Events）：模擬點擊選擇槽位
+            tile.onclick = () => {
+                // 找到第一個空的槽位
+                const emptySlotIndex = slotContents.findIndex(c => c === null);
+                if (emptySlotIndex !== -1) {
+                    handleDropManual(tile, emptySlotIndex);
+                }
+            };
+
+            boardElement.appendChild(tile);
+            currentTiles.push(tile);
+        }
+
+
+        // --- 3. 檢查與消除邏輯 (已包含所有限制) ---
+        
+        function checkSentence() {
+            const assembledSentence = slotContents.map(c => c ? c.text : null);
+
+            if (assembledSentence.includes(null)) {
+                showMessage('請組出一個完整的六個方塊句子！', 'wrong');
+                return;
+            }
+            
+            if (assembledSentence[1] !== '和' || assembledSentence[3] !== '都') {
+                 showMessage('語法結構錯誤：請確認「和」與「都」的位置！', 'wrong');
+                 setTimeout(resetTiles, 1500); 
+                 return;
+            }
+
+            const p1 = assembledSentence[0]; 
+            const p3 = assembledSentence[2]; 
+            const cWord = assembledSentence[4]; 
+            const dWord = assembledSentence[5]; 
+
+            const p1Type = getVocabCategory(p1);
+            const p3Type = getVocabCategory(p3);
+            const dType = getVocabCategory(dWord);
+
+            let isCorrect = false;
+            let currentSentenceKey = null;
+
+            if (p1Type !== p3Type || !validSubjectCategories.includes(p1Type)) {
+                showMessage('錯誤：A 和 B 必須屬於相同的名詞類別。', 'wrong');
+                setTimeout(resetTiles, 1500); 
+                return;
+            }
+
+            for (const template of sentenceTemplates) {
+                if (p1Type !== template.A_TYPE || p3Type !== template.B_TYPE) continue;
+                if (cWord !== template.C) continue;
+                
+                // 檢查 D_CAT（詞彙類別）
+                if (template.D_CAT && !template.D_CAT.includes(dType)) continue;
+
+                // 檢查 D_WORD（詞彙本身）
+                if (template.D_WORD) {
+                    if (!template.D_WORD.includes(dWord)) continue;
+                }
+                
+                isCorrect = true;
+                const sortedSubjects = [p1, p3].sort(); 
+                currentSentenceKey = `${sortedSubjects[0]} 和 ${sortedSubjects[1]} 都 ${cWord} ${dWord}`;
+                break;
+            }
+
+            if (isCorrect) {
+                if (eliminatedSentences.has(currentSentenceKey)) {
+                    showMessage('這個句子已經消除過了！請嘗試其他組合。', 'wrong');
+                    setTimeout(resetTiles, 1500); 
+                    return;
+                }
+
+                showMessage('你答對了！', 'correct');
+                eliminatedSentences.add(currentSentenceKey); 
+                eliminateTiles(assembledSentence);
+            } else {
+                showMessage('這個組合不符合語法規則，請檢查動詞與補語的搭配！', 'wrong');
+                setTimeout(resetTiles, 1500); 
+            }
+        }
+
+        // 成功消除 (保持不變)
+        function eliminateTiles(assembledSentence) {
+            
+            const tilesToRemove = currentTiles.filter(tile => assembledSentence.includes(tile.dataset.text));
+
+            tilesToRemove.forEach(tile => {
+                if (tile.parentNode) {
+                    tile.remove();
+                }
+            });
+            
+            initializeSlots();
+            
+            showMessage(`成功消除！已消除 ${eliminatedSentences.size} 個句子。`, 'correct');
+            
+            currentTiles = Array.from(boardElement.children);
+            refillBoard(); 
+        }
+        
+        // 錯誤時將方塊歸位 (保持不變)
+        function resetTiles() {
+            slotContents.forEach((content, index) => {
+                if (content) {
+                    content.originalTile.classList.remove('hidden');
+                    document.getElementById(`slot-${index}`).innerHTML = '';
+                }
+            });
+            initializeSlots();
+            messageBox.textContent = '';
+            messageBox.className = '';
+        }
+        
+        // 補充新方塊並重新佈局 (保持不變)
+        function refillBoard(isInitial = false) {
+            currentTiles = Array.from(boardElement.children);
+            let existingVocab = currentTiles.map(tile => tile.dataset.text);
+            let vocabSet = new Set(existingVocab);
+
+            let requiredNext = ['都', '和'];
+            requiredNext.forEach(word => {
+                if (!vocabSet.has(word)) { 
+                    existingVocab.push(word); 
+                    vocabSet.add(word);
+                }
+            });
+
+            let seedWords = getRandomSubjectGroup(vocabSet);
+            seedWords.forEach(word => {
+                if (!vocabSet.has(word)) {
+                    existingVocab.push(word);
+                    vocabSet.add(word);
+                }
+            });
+            
+            let needToFill = GRID_SIZE - existingVocab.length;
+            
+            const allVocabTexts = allVocab.map(v => v.text);
+            
+            if (needToFill > 0) {
+                let availableFillers = shuffleArray(allVocabTexts.filter(w => !vocabSet.has(w)));
+                let fillerIndex = 0;
+
+                for (let i = 0; i < needToFill; i++) {
+                    let randomVocab;
+                    if (availableFillers.length > fillerIndex) {
+                        randomVocab = availableFillers[fillerIndex];
+                        fillerIndex++;
+                    } else {
+                        randomVocab = allVocabTexts[Math.floor(Math.random() * allVocabTexts.length)];
+                    }
+                    existingVocab.push(randomVocab);
+                }
+            }
+            
+            existingVocab = existingVocab.slice(0, GRID_SIZE);
+
+            boardElement.innerHTML = ''; 
+            let newTilesVocab = shuffleArray(existingVocab);
+            currentTiles = [];
+            
+            newTilesVocab.forEach(text => {
+                const vocabDef = allVocab.find(v => v.text === text); 
+                createTile(text, vocabDef ? vocabDef.type : 'subject');
+            });
+        }
+
+
+        // 訊息顯示
+        function showMessage(text, type) {
+            messageBox.textContent = text;
+            messageBox.className = type;
+        }
+       
+        // --- 啟動遊戲 ---
+        initializeGame();
+    </script>
 </body>
 </html>
