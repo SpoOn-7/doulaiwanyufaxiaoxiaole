@@ -20,9 +20,8 @@
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
-            touch-action: manipulation; /* 增強移動端響應 */
-    /* ... 其他樣式 ... */
-    touch-action: manipulation; /* 增強移動端響應，防止預設滑動 */
+            /* 🚀 關鍵：防止手機預設滑動/縮放 */
+            touch-action: none; 
         }
 
         h1 { color: #4682b4; }
@@ -143,13 +142,6 @@
                 padding: 10px;
             }
 
-            #game-board, #sentence-slots {
-                width: 100%;
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
             #game-board {
                 grid-template-columns: repeat(4, 65px); /* 進一步縮小 */
                 grid-template-rows: repeat(4, 65px);
@@ -165,15 +157,14 @@
 
             #sentence-slots {
                 margin-top: 20px;
-                /* 限制總寬度以實現 2 行排列 */
-                width: 250px;
-                justify-content: space-between;
+                /* 保持單行佈局，讓手機用戶可以拖曳到目標 */
+                width: 100%; 
             }
 
             .slot {
                 width: 65px;
                 height: 65px;
-                margin: 5px 3px;
+                margin: 0 2px;
             }
 
             .slot-end {
@@ -192,8 +183,8 @@
 
     <h1>都來玩！語法消消樂</h1>
     <div id="prompt">請組出一個由**六個**方塊組成的完整句子，填入下方欄位。</div>
-    <div id="instruction">提示：將方塊拖曳至下方的欄位中。點擊下方欄位中的方塊可取消。</div>
-    <div id="instruction">例句：Ａ和Ｂ＋都＋Ｖ.＋Ｏ.。我和你都聽音樂。</div>
+    <div id="instruction">提示：將方塊**拖曳**至下方的欄位中。點擊下方欄位中的方塊可取消。</div>
+    <div id="instruction">例句：我和你都聽音樂。</div>
 
 
     <div id="game-board">
@@ -223,6 +214,10 @@
         const messageBox = document.getElementById('message-box');
         const checkButton = document.getElementById('check-button');
 
+        // 🚀 新增全域變數，用於手機拖曳優化
+        let draggedTile = null;
+        let currentSlot = null; // 用於跟蹤當前手指所在的槽位
+
         // P: 人物, D: 飲料, S: 運動項目
         const vocabCategories = {
             'P': ['我', '你', '他', '爸爸', '媽媽', '姊姊', '妹妹', '哥哥'],
@@ -230,7 +225,7 @@
             'S': ['棒球', '網球', '籃球', '游泳'],
             'CONNECTOR': ['和'],
             'DOU': ['都'],
-            'VERB_GENERIC': ['喜歡', '學', '聽', '看', '玩', '喝'],
+            'VERB_GENERIC': ['喜歡', '學', '聽', '看', '覺得'],
             'VERB_ACTION': ['打'],
             'ADJ_VERB': ['好'],
             'COMPLEMENT_MUSIC': ['音樂'], 
@@ -270,12 +265,9 @@
             { A_TYPE: 'P', B_TYPE: 'P', C: '看', D_WORD: ['電影'] }, // 看 -> 電影
             { A_TYPE: 'P', B_TYPE: 'P', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['漂亮'] }, // 人 + 好 + 漂亮
             { A_TYPE: 'P', B_TYPE: 'P', C: '覺得', D_CAT: ['COMPLEMENT'] },
-            { A_TYPE: 'P', B_TYPE: 'P', C: '喝', D_CAT: ['D'] },
-            { A_TYPE: 'P', B_TYPE: 'P', C: '玩', D_CAT: ['棒球','網球','籃球'] },
 
             // D 和 D 都 好 D (非人稱 + 評價)
-            { A_TYPE: 'D', B_TYPE: 'D', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['喝'] },
-
+            { A_TYPE: 'D', B_TYPE: 'D', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['喝'] }, // 飲料 + 好 + 喝
             { A_TYPE: 'S', B_TYPE: 'S', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['玩'] }, // 運動 + 好 + 玩
             { A_TYPE: 'COMPLEMENT', B_TYPE: 'COMPLEMENT', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['看', '玩'] }, // 電影/運動 + 好 + 看/玩
             { A_TYPE: 'COMPLEMENT_MUSIC', B_TYPE: 'COMPLEMENT_MUSIC', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['聽'] }, // 音樂 + 好 + 聽
@@ -286,8 +278,7 @@
         let currentTiles = [];
         let slotContents = Array(SENTENCE_LENGTH).fill(null);
         let eliminatedSentences = new Set();
-        let draggedTile = null;
-
+        // draggedTile 移到最上方，已定義
 
         // 幫手函數：打亂陣列
         function shuffleArray(array) {
@@ -406,20 +397,118 @@
             });
         }
         
-        // 初始化下方拖曳欄位 (保持不變)
+        // 🚀 修改：初始化下方拖曳欄位 (移除 ondrop)
         function initializeSlots() {
             slotContents.fill(null);
             for(let i = 0; i < SENTENCE_LENGTH; i++) {
                 const slot = document.getElementById(`slot-${i}`);
                 slot.innerHTML = '';
-                slot.ondragover = (e) => e.preventDefault();
-                slot.ondrop = (e) => handleDrop(e, i);
+                // 桌面拖曳必要
+                slot.ondragover = (e) => e.preventDefault(); 
+                // **移除 slot.ondrop = ... 以便讓手機觸控處理放置邏輯**
             }
         }
 
-        // --- 2. 拖曳與復原邏輯 (整合桌面與手機) ---
+        // --- 2. 拖曳與復原邏輯 (整合桌面與手機優化) ---
 
-        // 🚀 **新增：創建方塊的函數**
+        // 🚀 關鍵：新增 setupDragEvents 函數來處理所有事件
+        function setupDragEvents(tile) {
+            // --- 桌面版（Drag Events） ---
+            tile.ondragstart = (e) => {
+                draggedTile = tile;
+                e.dataTransfer.setData('text/plain', tile.dataset.text);
+                setTimeout(() => tile.classList.add('dragging'), 0);
+            };
+
+            tile.ondragend = () => {
+                tile.classList.remove('dragging');
+                draggedTile = null;
+                currentSlot = null; // 重置
+            };
+
+            // --- 手機版（Touch Events）新增優化 ---
+
+            // 1. 觸摸開始 (touchstart): 準備拖曳並阻止頁面滾動
+            tile.ontouchstart = (e) => {
+                // 阻止瀏覽器處理觸摸（防止頁面滾動或縮放）
+                e.preventDefault(); 
+                
+                draggedTile = tile;
+                tile.classList.add('dragging');
+
+                // 模擬拖曳，將方塊隱藏
+                // 注意：這裡使用 setTimeout 確保隱藏發生在下一幀，讓拖曳手感更好
+                setTimeout(() => tile.classList.add('hidden'), 50); 
+            };
+
+            // 2. 觸摸移動 (touchmove): 追蹤手指位置並高亮目標槽位
+            tile.ontouchmove = (e) => {
+                if (!draggedTile) return;
+                
+                e.preventDefault(); // 再次阻止頁面滾動
+
+                // 獲取手指在螢幕上的位置
+                const touch = e.touches[0];
+                
+                // 偵測手指下方是否有目標元素 (slot)
+                const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+                
+                const slots = document.querySelectorAll('.slot');
+                let newSlot = null;
+
+                slots.forEach(slot => {
+                    const slotIndex = parseInt(slot.id.split('-')[1]);
+                    // 檢查目標元素是否為 slot 本身或 slot 內部的元素，且 slot 為空
+                    if (slot.contains(targetElement) && slotContents[slotIndex] === null) {
+                        newSlot = slot;
+                    }
+                });
+                
+                // 處理高亮效果 (可選，但有助於用戶體驗)
+                if (newSlot !== currentSlot) {
+                    if (currentSlot) {
+                        currentSlot.style.backgroundColor = ''; // 清除舊高亮
+                    }
+                    if (newSlot) {
+                        newSlot.style.backgroundColor = '#e0f7fa'; // 新高亮
+                    }
+                    currentSlot = newSlot;
+                }
+            };
+
+            // 3. 觸摸結束 (touchend): 放置方塊
+            tile.ontouchend = (e) => {
+                if (!draggedTile) return;
+                
+                draggedTile.classList.remove('dragging');
+                draggedTile.classList.remove('hidden'); // 先顯示回來
+
+                // 如果當前有高亮槽位，執行放置邏輯
+                if (currentSlot) {
+                    const slotIndex = parseInt(currentSlot.id.split('-')[1]);
+                    
+                    if (slotContents[slotIndex] === null) {
+                        // 手動觸發放置邏輯
+                        handleDropManual(draggedTile, slotIndex);
+                    }
+                }
+                
+                // 清除所有高亮並重置狀態
+                document.querySelectorAll('.slot').forEach(slot => slot.style.backgroundColor = '');
+                draggedTile = null;
+                currentSlot = null;
+            };
+
+             // 桌面拖曳放置處理 (保留，用於桌面瀏覽器)
+            tile.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const slotIndex = parseInt(e.currentTarget.id.split('-')[1]);
+                handleDrop(e, slotIndex);
+            });
+        }
+
+
+        // 🚀 修改：創建方塊的函數 (調用 setupDragEvents)
         function createTile(text, type) {
             const tile = document.createElement('div');
             tile.className = `tile ${type}`;
@@ -428,38 +517,14 @@
             tile.setAttribute('draggable', true);
             tile.dataset.originalType = type;
 
-            // 拖曳事件處理 (桌面)
-            tile.addEventListener('dragstart', (e) => {
-                draggedTile = tile;
-                e.dataTransfer.setData('text/plain', text);
-                setTimeout(() => tile.classList.add('dragging'), 0);
-            });
-
-            tile.addEventListener('dragend', () => {
-                tile.classList.remove('dragging');
-                draggedTile = null;
-            });
-
-            // 點擊事件處理 (手機/平板) - 模擬拖曳
-            tile.addEventListener('click', () => {
-                if (!tile.classList.contains('hidden')) {
-                    // 找到第一個空的 slot
-                    const slotIndex = slotContents.findIndex(c => c === null);
-                    if (slotIndex !== -1) {
-                        // 手動呼叫放置函數
-                        handleDropManual(tile, slotIndex);
-                    } else {
-                        showMessage('下方欄位已滿！', 'wrong');
-                    }
-                }
-            });
+            setupDragEvents(tile); // 應用新的事件處理邏輯
 
             boardElement.appendChild(tile);
             currentTiles.push(tile);
             return tile;
         }
 
-        // 拖曳放置處理 (桌面)
+        // 桌面拖曳放置處理 (保留原始邏輯，用於桌面)
         function handleDrop(e, slotIndex) {
             e.preventDefault();
             if (!draggedTile || slotContents[slotIndex] !== null) return;
@@ -470,171 +535,4 @@
             const vocabItem = allVocab.find(v => v.text === text);
             const type = vocabItem ? vocabItem.type : 'subject';
             
-            slotContents[slotIndex] = { text, originalTile, type };
-
-            const slotTile = document.createElement('div');
-            slotTile.className = `slot-tile ${type}`;
-            slotTile.textContent = text;
-
-            slotTile.onclick = () => removeTileFromSlot(slotIndex);
-
-            originalTile.classList.add('hidden');
-
-            const slot = document.getElementById(`slot-${slotIndex}`);
-            slot.innerHTML = '';
-            slot.appendChild(slotTile);
-        }
-
-        // 🚀 **新增：手動放置函數 (用於手機點擊)**
-        function handleDropManual(originalTile, slotIndex) {
-            const text = originalTile.dataset.text;
-
-            // 檢查 slot 是否已被佔用
-            if (slotContents[slotIndex] !== null) return;
-
-            const vocabItem = allVocab.find(v => v.text === text);
-            const type = vocabItem ? vocabItem.type : 'subject';
-
-            slotContents[slotIndex] = { text, originalTile, type };
-
-            const slotTile = document.createElement('div');
-            slotTile.className = `slot-tile ${type}`;
-            slotTile.textContent = text;
-
-            slotTile.onclick = () => removeTileFromSlot(slotIndex);
-
-            originalTile.classList.add('hidden');
-
-            const slot = document.getElementById(`slot-${slotIndex}`);
-            slot.innerHTML = '';
-            slot.appendChild(slotTile);
-        }
-
-
-        function removeTileFromSlot(slotIndex) {
-            if (slotContents[slotIndex] === null) return;
-
-            const { originalTile } = slotContents[slotIndex];
-
-            originalTile.classList.remove('hidden');
-
-            document.getElementById(`slot-${slotIndex}`).innerHTML = '';
-            slotContents[slotIndex] = null;
-        }
-
-        // 錯誤時將方塊歸位
-        function resetTiles() {
-            slotContents.forEach((content, index) => {
-                if (content) {
-                    content.originalTile.classList.remove('hidden');
-                    document.getElementById(`slot-${index}`).innerHTML = '';
-                }
-            });
-            initializeSlots();
-            messageBox.textContent = '';
-            messageBox.className = '';
-        }
-
-        // --- 3. 檢查與消除邏輯 (保持不變) ---
-
-        function checkSentence() {
-            const assembledSentence = slotContents.map(c => c ? c.text : null);
-
-            if (assembledSentence.includes(null)) {
-                showMessage('請組出一個完整的六個方塊句子！', 'wrong');
-                return;
-            }
-
-            if (assembledSentence[1] !== '和' || assembledSentence[3] !== '都') {
-                 showMessage('語法結構錯誤：請確認「和」與「都」的位置！', 'wrong');
-                 setTimeout(resetTiles, 1500);
-                 return;
-            }
-
-            const p1 = assembledSentence[0];
-            const p3 = assembledSentence[2];
-            const cWord = assembledSentence[4];
-            const dWord = assembledSentence[5];
-
-            const p1Type = getVocabCategory(p1);
-            const p3Type = getVocabCategory(p3);
-            const dType = getVocabCategory(dWord);
-
-            let isCorrect = false;
-            let currentSentenceKey = null;
-
-            if (p1Type !== p3Type || !validSubjectCategories.includes(p1Type)) {
-                showMessage('錯誤：A 和 B 必須屬於相同的名詞類別。', 'wrong');
-                setTimeout(resetTiles, 1500);
-                return;
-            }
-
-            for (const template of sentenceTemplates) {
-                if (p1Type !== template.A_TYPE || p3Type !== template.B_TYPE) continue;
-                if (cWord !== template.C) continue;
-
-                if (template.D_CAT && !template.D_CAT.includes(dType)) continue;
-
-                if (template.D_WORD) {
-                    if (!template.D_WORD.includes(dWord)) continue;
-                }
-
-                isCorrect = true;
-                const sortedSubjects = [p1, p3].sort();
-                currentSentenceKey = `${sortedSubjects[0]} 和 ${sortedSubjects[1]} 都 ${cWord} ${dWord}`;
-                break;
-            }
-
-            if (isCorrect) {
-                if (eliminatedSentences.has(currentSentenceKey)) {
-                    showMessage('這個句子已經消除過了！請嘗試其他組合。', 'wrong');
-                    setTimeout(resetTiles, 1500);
-                    return;
-                }
-
-                showMessage('你答對了！', 'correct');
-                eliminatedSentences.add(currentSentenceKey);
-                eliminateTiles(assembledSentence);
-            } else {
-                showMessage('這個組合不符合語法規則，請檢查動詞與受詞的搭配！', 'wrong');
-                setTimeout(resetTiles, 1500);
-            }
-        }
-
-        // 成功消除 (保持不變)
-        function eliminateTiles(assembledSentence) {
-
-            const tilesToRemove = slotContents.map(c => c ? c.originalTile : null).filter(t => t);
-
-            tilesToRemove.forEach(tile => {
-                if (tile.parentNode) {
-                    tile.remove();
-                }
-            });
-
-            initializeSlots();
-
-            showMessage(`成功消除！已消除 ${eliminatedSentences.size} 個句子。`, 'correct');
-
-            currentTiles = Array.from(boardElement.children);
-            refillBoard();
-        }
-
-        // 訊息顯示
-        function showMessage(text, type) {
-            messageBox.textContent = text;
-            messageBox.className = type;
-        }
-document.addEventListener('touchmove', function(event) {
-    // 檢查是否沒有開啟捲軸
-    if (document.body.scrollHeight <= window.innerHeight) {
-        event.preventDefault(); 
-    }
-}, { passive: false });
-        
-        // 🚀 **關鍵：啟動遊戲的函數呼叫**
-        document.addEventListener('DOMContentLoaded', initializeGame);
-
-    </script>
-</body>
-</html>
+            slotContents[slotIndex] = { text, originalTile, type
