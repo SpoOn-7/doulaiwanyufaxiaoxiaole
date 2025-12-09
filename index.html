@@ -247,6 +247,21 @@
             padding: 8px;
         }
     }
+        /* --- 基礎樣式 --- */
+body {
+    /* ... 其他屬性 ... */
+    user-select: none; /* 防止所有文字被選取 */
+    -webkit-user-select: none; /* 適用於舊版 WebKit 瀏覽器（如舊版 Safari/Chrome）*/
+    -moz-user-select: none; /* 適用於 Firefox */
+    -ms-user-select: none; /* 適用於 Internet Explorer/Edge */
+}
+
+/* --- 方塊樣式 --- */
+.tile {
+    /* ... 其他屬性 ... */
+    user-select: none; /* 確保方塊內文字無法選取 */
+    /* ... 其他 user-select 屬性已包含在 body 中，但這裡再加一次更保險 */
+}
     </style>
 </head>
 <body>
