@@ -192,8 +192,8 @@
 
     <h1>都來玩！語法消消樂</h1>
     <div id="prompt">請組出一個由**六個**方塊組成的完整句子，填入下方欄位。</div>
-    <div id="instruction">提示：將方塊拖曳至下方的欄位中（或在手機上點擊方塊即可放入）。點擊下方欄位中的方塊可取消。</div>
-    <div id="instruction">例句：我和你都聽音樂。</div>
+    <div id="instruction">提示：將方塊拖曳至下方的欄位中。點擊下方欄位中的方塊可取消。</div>
+    <div id="instruction">例句：Ａ和Ｂ＋都＋Ｖ.＋Ｏ.。我和你都聽音樂。</div>
 
 
     <div id="game-board">
@@ -595,7 +595,7 @@
                 eliminatedSentences.add(currentSentenceKey);
                 eliminateTiles(assembledSentence);
             } else {
-                showMessage('這個組合不符合語法規則，請檢查動詞與補語的搭配！', 'wrong');
+                showMessage('這個組合不符合語法規則，請檢查動詞與受詞的搭配！', 'wrong');
                 setTimeout(resetTiles, 1500);
             }
         }
