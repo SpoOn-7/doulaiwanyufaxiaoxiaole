@@ -397,17 +397,20 @@
             });
         }
         
-        // 🚀 修改：初始化下方拖曳欄位 (移除 ondrop)
-        function initializeSlots() {
-            slotContents.fill(null);
-            for(let i = 0; i < SENTENCE_LENGTH; i++) {
-                const slot = document.getElementById(`slot-${i}`);
-                slot.innerHTML = '';
-                // 桌面拖曳必要
-                slot.ondragover = (e) => e.preventDefault(); 
-                // **移除 slot.ondrop = ... 以便讓手機觸控處理放置邏輯**
-            }
-        }
+// 🚀 修改：初始化下方拖曳欄位 (僅保留 ondragover)
+function initializeSlots() {
+    slotContents.fill(null);
+    for(let i = 0; i < SENTENCE_LENGTH; i++) {
+        const slot = document.getElementById(`slot-${i}`);
+        slot.innerHTML = '';
+        
+        // 桌面拖曳必要：允許方塊被拖曳到此處
+        slot.ondragover = (e) => e.preventDefault(); 
+        
+        // **新增：只在桌面環境下，為 slot 綁定 ondrop 事件**
+        slot.ondrop = (e) => handleDrop(e, i); 
+    }
+}
 
         // --- 2. 拖曳與復原邏輯 (整合桌面與手機優化) ---
 
@@ -508,31 +511,46 @@
         }
 
 
-        // 🚀 修改：創建方塊的函數 (調用 setupDragEvents)
-        function createTile(text, type) {
-            const tile = document.createElement('div');
-            tile.className = `tile ${type}`;
-            tile.textContent = text;
-            tile.dataset.text = text;
-            tile.setAttribute('draggable', true);
-            tile.dataset.originalType = type;
+// 🚀 修改：創建方塊的函數 (調用 setupDragEvents)
+function createTile(text, type) {
+    const tile = document.createElement('div');
+    tile.className = `tile ${type}`;
+    tile.textContent = text;
+    tile.dataset.text = text;
+    tile.setAttribute('draggable', true);
+    tile.dataset.originalType = type;
 
-            setupDragEvents(tile); // 應用新的事件處理邏輯
+    // 應用新的拖曳與觸控事件處理邏輯
+    setupDragEvents(tile); 
 
-            boardElement.appendChild(tile);
-            currentTiles.push(tile);
-            return tile;
-        }
+    boardElement.appendChild(tile);
+    currentTiles.push(tile);
+    return tile;
+}
 
         // 桌面拖曳放置處理 (保留原始邏輯，用於桌面)
-        function handleDrop(e, slotIndex) {
-            e.preventDefault();
-            if (!draggedTile || slotContents[slotIndex] !== null) return;
+function handleDrop(e, slotIndex) {
+    e.preventDefault();
+    // 檢查是否有正在拖曳的方塊，並且目標 slot 是空的
+    if (!draggedTile || slotContents[slotIndex] !== null) return; 
 
-            const text = draggedTile.dataset.text;
-            const originalTile = draggedTile;
+    const text = draggedTile.dataset.text;
+    const originalTile = draggedTile;
 
-            const vocabItem = allVocab.find(v => v.text === text);
-            const type = vocabItem ? vocabItem.type : 'subject';
-            
-            slotContents[slotIndex] = { text, originalTile, type
+    const vocabItem = allVocab.find(v => v.text === text);
+    const type = vocabItem ? vocabItem.type : 'subject';
+    
+    slotContents[slotIndex] = { text, originalTile, type };
+
+    const slotTile = document.createElement('div');
+    slotTile.className = `slot-tile ${type}`;
+    slotTile.textContent = text;
+
+    slotTile.onclick = () => removeTileFromSlot(slotIndex);
+
+    originalTile.classList.add('hidden');
+
+    const slot = document.getElementById(`slot-${slotIndex}`);
+    slot.innerHTML = '';
+    slot.appendChild(slotTile);
+}
