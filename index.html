@@ -128,7 +128,125 @@
         }
         .correct { color: white; background-color: #28a745; }
         .wrong { color: white; background-color: #dc3545; }
+
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        /* ... 這是您原有的 CSS 區塊 ... */
+    
+    /* --- 遊戲網格樣式 --- */
+    #game-board {
+        display: grid;
+        grid-template-columns: repeat(4, 75px); /* 優化：75px */
+        grid-template-rows: repeat(4, 75px);    /* 優化：75px */
+        gap: 4px; /* 優化：4px */
+        padding: 15px;
+        background-color: #add8e6;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    /* --- 方塊樣式 --- */
+    .tile {
+        width: 75px;  /* 優化：75px */
+        height: 75px; /* 優化：75px */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 16px; /* 優化：16px */
+        font-weight: bold;
+        color: #333;
+        background-color: #fff;
+        border: 2px solid #ccc;
+        border-radius: 8px;
+        cursor: grab;
+        transition: opacity 0.3s, transform 0.1s;
+        user-select: none;
+    }
+    /* ... (其他樣式保持不變) ... */
+    
+    /* --- 下方填空欄位 (6個欄位) --- */
+    #sentence-slots {
+        display: flex;
+        margin-top: 30px;
+        margin-bottom: 20px;
+        width: 480px; /* 優化：480px */ 
+        justify-content: space-around; /* 優化：space-around */
+    }
+
+    .slot {
+        width: 75px; /* 優化：75px */
+        height: 75px; /* 優化：75px */
+        border: 2px dashed #4682b4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+    }
+    
+    /* ... (其他樣式保持不變) ... */
+    
+    /* --- 按鈕與狀態 --- */
+    #controls { margin-top: 15px; } /* 優化：增加間距 */
+    
+    .control-button {
+        padding: 12px 25px; /* 優化：增大點擊區域 */
+        font-size: 18px;
+        margin: 0 10px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+    
+    /* ------------------------------------- */
+    /* 🚀 新增：小螢幕（手機）媒體查詢優化 */
+    /* ------------------------------------- */
+    @media (max-width: 500px) {
+        body {
+            padding: 10px;
+        }
         
+        #game-board, #sentence-slots {
+            width: 100%;
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center;
+        }
+
+        #game-board {
+            grid-template-columns: repeat(4, 65px); 
+            grid-template-rows: repeat(4, 65px);
+            gap: 3px;
+            padding: 10px;
+        }
+        
+        .tile {
+            width: 65px;
+            height: 65px;
+            font-size: 14px;
+        }
+        
+        #sentence-slots {
+            margin-top: 20px;
+            /* 讓插槽排列在兩行 (3個/3個) 以適應窄螢幕 */
+            width: 250px; 
+            justify-content: space-between;
+        }
+
+        .slot {
+            width: 65px;
+            height: 65px;
+            margin: 5px 3px; 
+        }
+        
+        .slot-end {
+            height: 65px;
+            font-size: 30px;
+        }
+        
+        #message-box {
+            font-size: 18px;
+            padding: 8px;
+        }
+    }
     </style>
 </head>
 <body>
