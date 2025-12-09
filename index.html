@@ -21,6 +21,8 @@
             -moz-user-select: none;
             -ms-user-select: none;
             touch-action: manipulation; /* 增強移動端響應 */
+    /* ... 其他樣式 ... */
+    touch-action: manipulation; /* 增強移動端響應，防止預設滑動 */
         }
 
         h1 { color: #4682b4; }
@@ -620,7 +622,13 @@
             messageBox.textContent = text;
             messageBox.className = type;
         }
-
+document.addEventListener('touchmove', function(event) {
+    // 檢查是否沒有開啟捲軸
+    if (document.body.scrollHeight <= window.innerHeight) {
+        event.preventDefault(); 
+    }
+}, { passive: false });
+        
         // 🚀 **關鍵：啟動遊戲的函數呼叫**
         document.addEventListener('DOMContentLoaded', initializeGame);
 
