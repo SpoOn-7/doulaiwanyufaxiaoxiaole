@@ -262,6 +262,154 @@ body {
     user-select: none; /* 確保方塊內文字無法選取 */
     /* ... 其他 user-select 屬性已包含在 body 中，但這裡再加一次更保險 */
 }
+        /* --- 基礎樣式與文字選取禁用 --- */
+body {
+    font-family: '微軟正黑體', Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #f0f8ff;
+    padding: 20px;
+    /* 🚀 禁用所有文字選取 */
+    user-select: none; 
+    -webkit-user-select: none; 
+    -moz-user-select: none; 
+    -ms-user-select: none; 
+    touch-action: manipulation; /* 增強移動端響應 */
+}
+
+h1 { color: #4682b4; }
+#prompt { font-size: 16px; margin-bottom: 5px; color: #ff4500; font-weight: bold; }
+#instruction { margin-bottom: 15px; color: #333; font-size: 14px; }
+
+/* --- 遊戲網格與方塊樣式 (手機桌面通用優化) --- */
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(4, 75px); /* 優化：75px */
+    grid-template-rows: repeat(4, 75px);    /* 優化：75px */
+    gap: 4px; 
+    padding: 15px;
+    background-color: #add8e6;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.tile {
+    width: 75px;  /* 優化：75px */
+    height: 75px; /* 優化：75px */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px; 
+    font-weight: bold;
+    color: #333;
+    background-color: #fff;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    cursor: grab;
+    transition: opacity 0.3s, transform 0.1s;
+    user-select: none; /* 確保方塊文字禁用選取 */
+}
+
+/* --- 下方填空欄位 (6個欄位) (手機桌面通用優化) --- */
+#sentence-slots {
+    display: flex;
+    margin-top: 30px;
+    margin-bottom: 20px;
+    width: 480px; /* 配合 75px 寬度調整 */ 
+    justify-content: space-around; 
+}
+
+.slot {
+    width: 75px; 
+    height: 75px; 
+    border: 2px dashed #4682b4;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.slot-end {
+    width: 30px;
+    height: 75px; /* 與 slot 保持一致 */
+    border: none;
+    font-size: 40px;
+    font-weight: bold;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+ 
+/* --- 按鈕與狀態 (優化點擊區域) --- */
+#controls { margin-top: 15px; } 
+.control-button {
+    padding: 12px 25px; /* 增大點擊區域 */
+    font-size: 18px;
+    margin: 0 10px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+#message-box {
+    margin-top: 20px;
+    font-size: 20px;
+    font-weight: bold;
+    padding: 10px;
+    border-radius: 5px;
+    min-height: 40px;
+}
+/* ------------------------------------- */
+/* 🚀 新增：小螢幕（手機）媒體查詢優化 */
+/* ------------------------------------- */
+@media (max-width: 500px) {
+    body {
+        padding: 10px;
+    }
+    
+    #game-board, #sentence-slots {
+        width: 100%;
+        display: flex; 
+        flex-wrap: wrap; 
+        justify-content: center;
+    }
+
+    #game-board {
+        grid-template-columns: repeat(4, 65px); /* 進一步縮小到 65px */
+        grid-template-rows: repeat(4, 65px);
+        gap: 3px;
+        padding: 10px;
+    }
+    
+    .tile {
+        width: 65px;
+        height: 65px;
+        font-size: 14px;
+    }
+    
+    #sentence-slots {
+        margin-top: 20px;
+        /* 限制總寬度以觸發換行，實現 2 行排列 */
+        width: 250px; 
+        justify-content: space-between;
+    }
+
+    .slot {
+        width: 65px;
+        height: 65px;
+        margin: 5px 3px; 
+    }
+    
+    .slot-end {
+        height: 65px;
+        font-size: 30px;
+    }
+    
+    #message-box {
+        font-size: 16px;
+        padding: 8px;
+    }
+}
     </style>
 </head>
 <body>
@@ -460,6 +608,91 @@ body {
             setupDragEvents(tile);
             boardElement.appendChild(tile);
             currentTiles.push(tile);
+            // --- 2. 拖曳與復原邏輯 (新增手機觸摸處理) ---
+let draggedTile = null;
+let currentSlot = null; // 用於跟蹤當前手指所在的槽位
+
+function setupDragEvents(tile) {
+    
+    // --- 桌面版（Drag Events） ---
+    tile.ondragstart = (e) => {
+        draggedTile = tile;
+        e.dataTransfer.setData('text/plain', tile.dataset.id); 
+        setTimeout(() => tile.classList.add('dragging'), 0);
+    };
+
+    tile.ondragend = () => {
+        tile.classList.remove('dragging');
+        draggedTile = null;
+    };
+
+    // --- 手機版（Touch Events） ---
+
+    // 1. 觸摸開始 (touchstart): 準備拖曳並阻止頁面滾動
+    tile.ontouchstart = (e) => {
+        e.preventDefault(); 
+        
+        draggedTile = tile;
+        tile.classList.add('dragging');
+
+        // 模擬拖曳，將方塊隱藏
+        setTimeout(() => tile.classList.add('hidden'), 50); 
+    };
+
+    // 2. 觸摸移動 (touchmove): 追蹤手指位置並高亮目標槽位
+    tile.ontouchmove = (e) => {
+        if (!draggedTile) return;
+        
+        e.preventDefault(); // 再次阻止頁面滾動，防止網頁拖曳
+
+        const touch = e.touches[0];
+        const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+        
+        const slots = document.querySelectorAll('.slot');
+        let newSlot = null;
+
+        slots.forEach(slot => {
+            const slotIndex = parseInt(slot.id.split('-')[1]);
+            // 檢查目標元素是否在 slot 區域內，並且該槽位是空的
+            if (slot.contains(targetElement) && slotContents[slotIndex] === null) {
+                newSlot = slot;
+            }
+        });
+        
+        // 處理高亮效果 
+        if (newSlot !== currentSlot) {
+            if (currentSlot) {
+                currentSlot.style.backgroundColor = ''; 
+            }
+            if (newSlot) {
+                newSlot.style.backgroundColor = '#e0f7fa'; 
+            }
+            currentSlot = newSlot;
+        }
+    };
+
+    // 3. 觸摸結束 (touchend): 放置方塊
+    tile.ontouchend = (e) => {
+        if (!draggedTile) return;
+        
+        draggedTile.classList.remove('dragging');
+        draggedTile.classList.remove('hidden'); 
+
+        // 如果當前有高亮槽位，執行手動放置邏輯
+        if (currentSlot) {
+            const slotIndex = parseInt(currentSlot.id.split('-')[1]);
+            
+            if (slotContents[slotIndex] === null) {
+                handleDropManual(draggedTile, slotIndex);
+            }
+        }
+        
+        // 清除所有高亮並重置狀態
+        document.querySelectorAll('.slot').forEach(slot => slot.style.backgroundColor = '');
+        draggedTile = null;
+        currentSlot = null;
+    };
+}
         }
 
         // 初始化下方拖曳欄位 (保持不變)
@@ -472,6 +705,25 @@ body {
                 slot.ondrop = (e) => handleDrop(e, i);
             }
         }
+        // **重要：新的手動放置函數，供手機觸摸使用**
+function handleDropManual(originalTile, slotIndex) {
+    const text = originalTile.dataset.text;
+
+    slotContents[slotIndex] = { text, originalTile };
+
+    const slotTile = document.createElement('div');
+    const vocabItem = allVocab.find(v => v.text === text);
+    slotTile.className = `slot-tile ${vocabItem.type}`;
+    slotTile.textContent = text;
+    
+    slotTile.onclick = () => removeTileFromSlot(slotIndex);
+
+    originalTile.classList.add('hidden');
+    
+    const slot = document.getElementById(`slot-${slotIndex}`);
+    slot.innerHTML = '';
+    slot.appendChild(slotTile);
+}
         
         // --- 2. 拖曳與復原邏輯 (保持不變) ---
         let draggedTile = null;
