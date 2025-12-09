@@ -230,7 +230,7 @@
             'S': ['棒球', '網球', '籃球', '游泳'],
             'CONNECTOR': ['和'],
             'DOU': ['都'],
-            'VERB_GENERIC': ['喜歡', '學', '聽', '看', '覺得'],
+            'VERB_GENERIC': ['喜歡', '學', '聽', '看', '玩', '喝'],
             'VERB_ACTION': ['打'],
             'ADJ_VERB': ['好'],
             'COMPLEMENT_MUSIC': ['音樂'], 
@@ -270,6 +270,8 @@
             { A_TYPE: 'P', B_TYPE: 'P', C: '看', D_WORD: ['電影'] }, // 看 -> 電影
             { A_TYPE: 'P', B_TYPE: 'P', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['漂亮'] }, // 人 + 好 + 漂亮
             { A_TYPE: 'P', B_TYPE: 'P', C: '覺得', D_CAT: ['COMPLEMENT'] },
+            { A_TYPE: 'P', B_TYPE: 'P', C: '喝', D_CAT: ['D'] },
+            { A_TYPE: 'P', B_TYPE: 'P', C: '玩', D_CAT: ['棒球','網球','籃球'] }
 
             // D 和 D 都 好 D (非人稱 + 評價)
             { A_TYPE: 'D', B_TYPE: 'D', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['喝'] }, // 飲料 + 好 + 喝
