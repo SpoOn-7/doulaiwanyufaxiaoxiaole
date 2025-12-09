@@ -480,10 +480,11 @@ h1 { color: #4682b4; }
             // 其他功能性詞彙
             'CONNECTOR': ['和'],
             'DOU': ['都'],
-            'VERB_GENERIC': ['喜歡', '學', '聽', '看', '覺得'], // 增加 '覺得' (與 '漂亮' 搭配更自然)
-            'VERB_ACTION': ['打', '踢'], 
+            'VERB_GENERIC': ['喜歡', '學', '聽', '看'], // 增加 '覺得' (與 '漂亮' 搭配更自然)
+            'VERB_ACTION': ['打'], 
             'ADJ_VERB': ['好'],
-            'COMPLEMENT': ['電影', '音樂', '運動', '漂亮', '好玩', '玩', '喝', '茶', '看', '聽', '怎麼樣'] // '漂亮' 和 '電影'
+            'COMPLEMENT_MUSIC': ['音樂'],
+            'COMPLEMENT': ['電影', '運動', '漂亮', '好玩', '玩', '喝', '茶', '看', '聽'] // '漂亮' 和 '電影'
         };
         
         // 輔助函數：根據詞彙獲取其語法類別
@@ -499,56 +500,80 @@ h1 { color: #4682b4; }
         // 獲取所有 P/D/S 類別的詞彙
         const subjectVocab = [...vocabCategories.P, ...vocabCategories.D, ...vocabCategories.S];
 
-        // 結合所有詞彙和它們的顏色類型
-        const allVocab = [];
-        for (const cat in vocabCategories) {
-            const colorType = (cat === 'P' || cat === 'D' || cat === 'S') ? 'subject' : 
-                              (cat.startsWith('VERB') || cat === 'ADJ_VERB') ? 'verb' : 
-                              (cat === 'CONNECTOR') ? 'connector' : 
-                              (cat === 'DOU') ? 'dou' : 'complement';
-            
-            vocabCategories[cat].forEach(word => {
-                allVocab.push({ text: word, type: colorType });
-            });
-        }
-        
+// 結合所有詞彙和它們的顏色類型
+        const allVocab = [];
+        for (const cat in vocabCategories) {
+            // 🚀 更新：將 COMPLEMENT_MUSIC 視為 'complement' 顏色
+            const colorType = (cat === 'P' || cat === 'D' || cat === 'S' || cat === 'COMPLEMENT_MUSIC') ? 'subject' :  // 這裡將所有名詞都視為 subject 顏色
+                              (cat.startsWith('VERB') || cat === 'ADJ_VERB') ? 'verb' : 
+                              (cat === 'CONNECTOR') ? 'connector' : 
+                              (cat === 'DOU') ? 'dou' : 'complement';
+            
+            vocabCategories[cat].forEach(word => {
+                allVocab.push({ text: word, type: colorType });
+            });
+        }
         // --- 句型模板規則 ---
-        const sentenceTemplates = [
-            // 1. 人物 (P) - 通用動作
-            { A_TYPE: 'P', B_TYPE: 'P', C: '喜歡', D_CAT: ['S', 'D', 'COMPLEMENT'] }, 
-            { A_TYPE: 'P', B_TYPE: 'P', C: '學', D_CAT: ['S', 'COMPLEMENT'] }, 
-            { A_TYPE: 'P', B_TYPE: 'P', C: '打', D_CAT: ['S'] }, 
-            { A_TYPE: 'P', B_TYPE: 'P', C: '聽', D_CAT: ['COMPLEMENT'] }, 
-            
-            // **[新]** 允許：P 和 P 都 看 S (運動) / COMPLEMENT (電影, 音樂)
-            { A_TYPE: 'P', B_TYPE: 'P', C: '看', D_CAT: ['S', 'COMPLEMENT'] }, 
-            
-            // **[新]** 允許：P 和 P 都 好 漂亮
-            // D_WORD 限定為 '漂亮'，確保語義。
-            { A_TYPE: 'P', B_TYPE: 'P', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['漂亮'] }, 
-            
-            // **[新]** 允許：P 和 P 都 覺得 D (怎麼樣/漂亮)
-            { A_TYPE: 'P', B_TYPE: 'P', C: '覺得', D_CAT: ['COMPLEMENT'] },
+        const sentenceTemplates = [
+            // ------------------------------------
+            // 1. 人物 (P) 的動作
+            // ------------------------------------
+            
+            // P 和 P 都 喜歡 D_CAT (S, D, COMPLEMENT, COMPLEMENT_MUSIC)
+            { A_TYPE: 'P', B_TYPE: 'P', C: '喜歡', D_CAT: ['S', 'D', 'COMPLEMENT', 'COMPLEMENT_MUSIC'] }, 
+            // P 和 P 都 學 D_CAT (S, COMPLEMENT)
+            { A_TYPE: 'P', B_TYPE: 'P', C: '學', D_CAT: ['S', 'COMPLEMENT'] }, 
+            
+            // 🚀 限制：「打」只能和棒球/網球/籃球配對 (S類別)
+            { A_TYPE: 'P', B_TYPE: 'P', C: '打', D_CAT: ['S'] }, 
+            
+            // 🚀 限制：「聽」只能和音樂配對 (COMPLEMENT_MUSIC)
+            { A_TYPE: 'P', B_TYPE: 'P', C: '聽', D_CAT: ['COMPLEMENT_MUSIC'] }, 
+            
+            // 🚀 限制：「看」只能和電影配對 (D_WORD = '電影')
+            { A_TYPE: 'P', B_TYPE: 'P', C: '看', D_WORD: ['電影'] }, 
+            
+            // P 和 P 都 好 漂亮
+            { A_TYPE: 'P', B_TYPE: 'P', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['漂亮'] }, 
+            
+            // P 和 P 都 覺得 D (怎麼樣/漂亮)
+            { A_TYPE: 'P', B_TYPE: 'P', C: '覺得', D_CAT: ['COMPLEMENT'] },
 
-            // 2. 飲料 (D) - 嚴格限定「好」搭配
-            { 
-                A_TYPE: 'D', B_TYPE: 'D', C: '好', 
-                D_CAT: ['COMPLEMENT'], 
-                D_WORD: ['喝'] 
-            },
-            // 3. 運動 (S) - 嚴格限定「好」搭配
-            { 
-                A_TYPE: 'S', B_TYPE: 'S', C: '好', 
-                D_CAT: ['COMPLEMENT'], 
-                D_WORD: ['玩'] 
-            },
-            // 4. 事物 (COMPLEMENT) - 嚴格限定「好」搭配
-            { 
-                A_TYPE: 'COMPLEMENT', B_TYPE: 'COMPLEMENT', C: '好', 
-                D_CAT: ['COMPLEMENT'], 
-                D_WORD: ['看', '聽'] 
-            },
-        ];
+            // ------------------------------------
+            // 2. 飲料 (D) - 「好」搭配
+            // ------------------------------------
+            { 
+                A_TYPE: 'D', B_TYPE: 'D', C: '好', 
+                // 🚀 限制：「好」只能和「喝」配對
+                D_CAT: ['COMPLEMENT'], 
+                D_WORD: ['喝'] 
+            },
+
+            // ------------------------------------
+            // 3. 運動 (S) - 「好」搭配
+            // ------------------------------------
+            { 
+                A_TYPE: 'S', B_TYPE: 'S', C: '好', 
+                // 🚀 限制：「好」只能和「玩」配對
+                D_CAT: ['COMPLEMENT'], 
+                D_WORD: ['玩'] 
+            },
+
+            // ------------------------------------
+            // 4. 其他事物 (COMPLEMENT/COMPLEMENT_MUSIC) - 「好」搭配
+            // ------------------------------------
+            { 
+                A_TYPE: 'COMPLEMENT', B_TYPE: 'COMPLEMENT', C: '好', 
+                // 限制：'電影'/'運動' 搭配 '好看'，其他名詞搭配 '好玩'。
+                D_CAT: ['COMPLEMENT'], 
+                D_WORD: ['看', '玩'] 
+            },
+            { 
+                A_TYPE: 'COMPLEMENT_MUSIC', B_TYPE: 'COMPLEMENT_MUSIC', C: '好', 
+                D_CAT: ['COMPLEMENT'], 
+                D_WORD: ['聽'] // 🚀 限制：音樂只能搭配「好聽」
+            },
+        ];
         
         const validSubjectCategories = ['P', 'D', 'S', 'COMPLEMENT'];
         
