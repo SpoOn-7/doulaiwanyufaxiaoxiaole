@@ -226,12 +226,12 @@
             'CONNECTOR': ['和'],
             'DOU': ['都'],
             // 💡 詞彙修改：「玩」和「喝」同時可作為動詞使用
-            'VERB_GENERIC': ['喜歡', '學', '聽', '看', '玩', '喝'], 
+            'VERB_GENERIC': ['喜歡', '學', '聽', '看', '玩', '喝', '是'], 
             'VERB_ACTION': ['打'],
             'ADJ_VERB': ['好'],
             'COMPLEMENT_MUSIC': ['音樂'], 
             // 💡 詞彙修改：將「玩」和「喝」從 COMPLEMENT 移除
-            'COMPLEMENT': ['電影', '運動', '漂亮', '好玩', '玩', '喝', '看', '聽'] 
+            'COMPLEMENT': ['電影', '運動', '漂亮的', '漂亮', '好玩', '玩', '喝', '看', '聽'] 
         };
 
         // 輔助函數：根據詞彙獲取其語法類別
@@ -275,9 +275,11 @@
             // D 和 D 都 好 D (非人稱 + 評價)
             { A_TYPE: 'D', B_TYPE: 'D', C: '好', D_CAT: ['COMPLEMENT', 'VERB_GENERIC'], D_WORD: ['喝'] }, // 飲料 + 好 + 喝
             { A_TYPE: 'S', B_TYPE: 'S', C: '好', D_CAT: ['COMPLEMENT', 'VERB_GENERIC'], D_WORD: ['玩'] }, // 運動 + 好 + 玩
-            { A_TYPE: 'COMPLEMENT', B_TYPE: 'COMPLEMENT', C: '好', D_CAT: ['COMPLEMENT', 'VERB_GENERIC'], D_WORD: ['看', '玩'] }, // 電影/運動 + 好 + 看/玩
+            { A_TYPE: 'COMPLEMENT', B_TYPE: 'COMPLEMENT', C: '好', D_CAT: ['COMPLEMENT', 'VERB_GENERIC'], D_WORD: ['看', '玩', '好玩'] }, // 電影/運動 + 好 + 看/玩
             { A_TYPE: 'COMPLEMENT_MUSIC', B_TYPE: 'COMPLEMENT_MUSIC', C: '好', D_CAT: ['COMPLEMENT', 'VERB_GENERIC'], D_WORD: ['聽'] }, // 音樂 + 好 + 聽
-            { A_TYPE: 'P', B_TYPE: 'P', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['漂亮'] }, // 人 + 好 + 漂亮
+            { A_TYPE: 'P', B_TYPE: 'P', C: '好', D_WORD: ['是'], D_WORD: ['漂亮的'] }, // 人 + 好 + 漂亮
+             { A_TYPE: 'P', B_TYPE: 'P', C: '好', D_WORD: ['好'], D_WORD: ['漂亮'] },
+
         ];
 
         const validSubjectCategories = ['P', 'D', 'S', 'COMPLEMENT', 'COMPLEMENT_MUSIC'];
