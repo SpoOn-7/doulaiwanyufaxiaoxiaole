@@ -260,22 +260,22 @@
         // --- 句型模板規則 ---
         const sentenceTemplates = [
             // P 和 P 都 C D (人 + 動作)
-            { A_TYPE: 'P', B_TYPE: 'P', C: '喜歡', D_CAT: ['S', 'D', 'COMPLEMENT', 'COMPLEMENT_MUSIC'] },
+            { A_TYPE: 'P', B_TYPE: 'P', C: '喜歡', D_CAT: ['S', 'D', 'COMPLEMENT', 'COMPLEMENT_MUSIC', 'VERB_GENERIC'] },
             { A_TYPE: 'P', B_TYPE: 'P', C: '學', D_CAT: ['S', 'COMPLEMENT'] },
             { A_TYPE: 'P', B_TYPE: 'P', C: '打', D_CAT: ['S'] }, // 打 -> 棒球/網球/籃球
             { A_TYPE: 'P', B_TYPE: 'P', C: '聽', D_CAT: ['COMPLEMENT_MUSIC'] }, // 聽 -> 音樂
-            { A_TYPE: 'P', B_TYPE: 'P', C: '看', D_WORD: ['電影'] }, // 看 -> 電影
+            { A_TYPE: 'P', B_TYPE: 'P', C: '看', D_WORD: ['電影', 'D'] }, // 看 -> 電影
             { A_TYPE: 'P', B_TYPE: 'P', C: '覺得', D_CAT: ['COMPLEMENT'] },
             
             // 💡 新增/修改：動詞「玩」和「喝」的規則
-            { A_TYPE: 'P', B_TYPE: 'P', C: '玩', D_CAT: ['S', 'COMPLEMENT_MUSIC'] }, // 玩 -> 籃球/網球/棒球/音樂 (S 和 COMPLEMENT_MUSIC)
+            { A_TYPE: 'P', B_TYPE: 'P', C: '玩', D_CAT: ['S', 'COMPLEMENT_MUSIC', 'COMPLEMENT'] }, // 玩 -> 籃球/網球/棒球/音樂 (S 和 COMPLEMENT_MUSIC)
             { A_TYPE: 'P', B_TYPE: 'P', C: '喝', D_CAT: ['D'] }, // 喝 -> 飲料 (D)
 
             // D 和 D 都 好 D (非人稱 + 評價)
-            { A_TYPE: 'D', B_TYPE: 'D', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['喝'] }, // 飲料 + 好 + 喝
-            { A_TYPE: 'S', B_TYPE: 'S', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['玩'] }, // 運動 + 好 + 玩
-            { A_TYPE: 'COMPLEMENT', B_TYPE: 'COMPLEMENT', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['看', '玩'] }, // 電影/運動 + 好 + 看/玩
-            { A_TYPE: 'COMPLEMENT_MUSIC', B_TYPE: 'COMPLEMENT_MUSIC', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['聽'] }, // 音樂 + 好 + 聽
+            { A_TYPE: 'D', B_TYPE: 'D', C: '好', D_CAT: ['COMPLEMENT', 'VERB_GENERIC'], D_WORD: ['喝'] }, // 飲料 + 好 + 喝
+            { A_TYPE: 'S', B_TYPE: 'S', C: '好', D_CAT: ['COMPLEMENT', 'VERB_GENERIC'], D_WORD: ['玩'] }, // 運動 + 好 + 玩
+            { A_TYPE: 'COMPLEMENT', B_TYPE: 'COMPLEMENT', C: '好', D_CAT: ['COMPLEMENT', 'VERB_GENERIC'], D_WORD: ['看', '玩'] }, // 電影/運動 + 好 + 看/玩
+            { A_TYPE: 'COMPLEMENT_MUSIC', B_TYPE: 'COMPLEMENT_MUSIC', C: '好', D_CAT: ['COMPLEMENT', 'VERB_GENERIC'], D_WORD: ['聽'] }, // 音樂 + 好 + 聽
             { A_TYPE: 'P', B_TYPE: 'P', C: '好', D_CAT: ['COMPLEMENT'], D_WORD: ['漂亮'] }, // 人 + 好 + 漂亮
         ];
 
