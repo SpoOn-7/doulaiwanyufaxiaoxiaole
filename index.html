@@ -264,13 +264,13 @@
             { A_TYPE: 'P', B_TYPE: 'P', C: '學', D_CAT: ['S', 'COMPLEMENT'] },
             { A_TYPE: 'P', B_TYPE: 'P', C: '打', D_CAT: ['S'] }, // 打 -> 棒球/網球/籃球
             { A_TYPE: 'P', B_TYPE: 'P', C: '聽', D_CAT: ['COMPLEMENT_MUSIC'] }, // 聽 -> 音樂
-            { A_TYPE: 'P', B_TYPE: 'P', C: '看', D_CAT: ['S'], D_WORD: ['電影'] }, // 看 -> 電影
+            { A_TYPE: 'P', B_TYPE: 'P', C: '看', D_WORD: ['電影'] }, // 看 -> 電影
             { A_TYPE: 'P', B_TYPE: 'P', C: '覺得', D_CAT: ['COMPLEMENT'] },
             
             // 💡 新增/修改：動詞「玩」和「喝」的規則
             { A_TYPE: 'P', B_TYPE: 'P', C: '玩', D_CAT: ['S', 'COMPLEMENT_MUSIC', 'COMPLEMENT'] }, // 玩 -> 籃球/網球/棒球/音樂 (S 和 COMPLEMENT_MUSIC)
             { A_TYPE: 'P', B_TYPE: 'P', C: '喝', D_CAT: ['D'] }, // 喝 -> 飲料 (D)
-            { A_TYPE: 'P', B_TYPE: 'P', C: '看', D_CAT: ['S'], D_WORD: ['電影'] },
+            { A_TYPE: 'P', B_TYPE: 'P', C: '看', D_CAT: ['S'] },
 
             // D 和 D 都 好 D (非人稱 + 評價)
             { A_TYPE: 'D', B_TYPE: 'D', C: '好', D_CAT: ['COMPLEMENT', 'VERB_GENERIC'], D_WORD: ['喝'] }, // 飲料 + 好 + 喝
